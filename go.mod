@@ -15,7 +15,7 @@ require (
 	github.com/regclient/regclient v0.11.5
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/image v0.24.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.43.0
 	modernc.org/sqlite v1.61.0
 )
 
