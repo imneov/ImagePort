@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>ImagePort — Commander prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="dialogs.css" />
+    <script defer src="messages.js"></script>
+    <script defer src="model.js"></script>
+    <script defer src="operations.js"></script>
+    <script defer src="render.js"></script>
+    <script defer src="dialogs.js"></script>
+    <script defer src="targets.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to workspace</a>
+    <div id="application"></div>
+    <div id="target-menu" class="target-menu" hidden></div>
+    <dialog id="modal" aria-labelledby="dialog-title"></dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <noscript>This interactive prototype requires JavaScript.</noscript>
+  </body>
+</html>

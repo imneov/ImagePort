@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible ImagePort issue.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include passwords, tokens, private image content, or unredacted logs. Use SECURITY.md for vulnerabilities.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: ImagePort revision, OS/version, CPU architecture, registry product/version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the operation, archive format and platform selection where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized evidence
+      description: Task state, stage, safe error code, and relevant response shape or digest comparison.
+    validations:
+      required: true

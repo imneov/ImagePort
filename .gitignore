@@ -1,0 +1,10 @@
+/dist/
+/tmp/
+*.partial
+*.db
+*.db-shm
+*.db-wal
+coverage.out
+.DS_Store
+.idea/
+.vscode/

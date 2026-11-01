@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .go-version
+          cache: true
+      - name: Verify modules
+        run: go mod verify
+      - name: Check formatting
+        shell: bash
+        run: test -z "$(gofmt -l cmd internal tools)"
+      - name: Check repository standards
+        run: go run ./tools/check
+      - name: Vet
+        run: go vet -tags ci ./...
+      - name: Test with race detector
+        run: go test -race -tags ci ./...
+      - name: Render headless desktop
+        shell: bash
+        run: |
+          mkdir -p tmp
+          go run -tags ci ./cmd/client --smoke --data-dir ./tmp/smoke --screenshot ./tmp/desktop.png
+      - name: Upload smoke screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: tmp/desktop.png

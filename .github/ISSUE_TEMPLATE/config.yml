@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security policy
+    url: https://github.com/imneov/ImagePort/blob/main/SECURITY.md
+    about: Read the private reporting instructions before reporting vulnerabilities.

@@ -1,0 +1,337 @@
+.app.collapsed {
+  grid-template-columns: 68px minmax(0, 1fr);
+}
+.collapsed .nav-label,
+.collapsed .nav-text,
+.collapsed .nav-button .count,
+.collapsed .local-status,
+.collapsed .prototype-label {
+  display: none;
+}
+.collapsed .nav-button {
+  justify-content: center;
+  padding: 12px 8px;
+}
+.collapsed .sidebar {
+  padding: 22px 10px 14px;
+}
+.collapsed .sidebar-bottom {
+  padding-top: 0;
+}
+.app.collapsed .brand {
+  width: 179px;
+}
+.mobile-veil {
+  display: none;
+}
+@media (min-width: 1600px) {
+  .content {
+    padding: 38px 48px;
+  }
+  .page-heading {
+    margin-bottom: 30px;
+  }
+  td {
+    height: 75px;
+  }
+  .section {
+    margin-top: 37px;
+  }
+}
+@media (max-width: 1150px) {
+  .content {
+    padding: 28px 24px;
+  }
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .search-trigger {
+    min-width: 155px;
+  }
+  .topbar {
+    gap: 14px;
+  }
+  .top-actions {
+    gap: 3px;
+  }
+  .task-top span:not(.activity-dot) {
+    display: none;
+  }
+  td,
+  th {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .context-right .muted {
+    display: none;
+  }
+}
+@media (max-width: 850px) {
+  .topbar {
+    padding: 0 16px;
+  }
+  .brand {
+    width: auto;
+  }
+  .brand-name small,
+  .top-separator,
+  .breadcrumb,
+  .search-trigger kbd {
+    display: none;
+  }
+  .search-trigger {
+    min-width: 0;
+    width: 32px;
+    justify-content: center;
+    padding: 0;
+  }
+  .search-trigger span {
+    display: none;
+  }
+  .app {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+  .sidebar {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+  .nav-label,
+  .nav-text,
+  .nav-button .count,
+  .local-status,
+  .prototype-label {
+    display: none;
+  }
+  .nav-button {
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .sidebar-bottom {
+    padding-top: 0;
+  }
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  .heading-actions {
+    gap: 6px;
+  }
+  .page-heading {
+    align-items: flex-start;
+  }
+  .heading-actions .btn {
+    font-size: 11px;
+    padding: 8px;
+  }
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .settings-menu {
+    display: none;
+  }
+  .registry-context .context-right {
+    gap: 4px;
+  }
+  .registry-context .context-right .btn {
+    font-size: 0;
+    gap: 0;
+  }
+  .registry-context .context-right .btn svg {
+    font-size: 12px;
+  }
+  .activity-progress {
+    width: 110px;
+  }
+  .activity-info strong {
+    display: block;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toolbar {
+    align-items: stretch;
+  }
+  .filter-search {
+    width: 100%;
+  }
+  .filter-controls {
+    flex-shrink: 0;
+  }
+}
+@media (max-width: 600px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    display: none;
+  }
+  .app.mobile-menu .sidebar {
+    display: flex;
+    position: fixed;
+    top: 64px;
+    bottom: 0;
+    left: 0;
+    width: 224px;
+    z-index: 15;
+    box-shadow: var(--shadow);
+  }
+  .app.mobile-menu .sidebar .nav-text,
+  .app.mobile-menu .sidebar .nav-label,
+  .app.mobile-menu .sidebar .prototype-label {
+    display: block;
+  }
+  .app.mobile-menu .nav-button {
+    justify-content: flex-start;
+  }
+  .app.mobile-menu .mobile-veil {
+    display: block;
+    position: fixed;
+    inset: 64px 0 0;
+    background: #0005;
+    z-index: 14;
+    border: 0;
+  }
+  .workspace {
+    grid-column: 1;
+  }
+  .content {
+    padding: 24px 17px;
+  }
+  .brand-name {
+    font-size: 16px;
+  }
+  .topbar {
+    gap: 7px;
+  }
+  .top-actions {
+    gap: 1px;
+  }
+  .task-top {
+    padding-right: 8px;
+    margin-right: 0;
+  }
+  .top-action {
+    padding: 6px;
+  }
+  .page-heading {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 21px;
+  }
+  .heading-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  h1 {
+    font-size: 25px;
+  }
+  .registry-context {
+    padding: 12px;
+    gap: 9px;
+    margin-bottom: 20px;
+  }
+  .registry-address {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .registry-select {
+    max-width: 150px;
+  }
+  .context-right .badge {
+    font-size: 0;
+    gap: 0;
+    padding: 5px;
+  }
+  .context-right .badge .dot {
+    width: 6px;
+    height: 6px;
+  }
+  .toolbar {
+    flex-direction: column;
+    gap: 9px;
+  }
+  .filter-controls {
+    justify-content: space-between;
+  }
+  .filter-controls .select-control {
+    flex: 1;
+  }
+  .tabs {
+    gap: 18px;
+  }
+  .activity-row {
+    padding: 13px;
+    gap: 9px;
+  }
+  .activity-info strong {
+    max-width: 180px;
+    font-size: 10px;
+  }
+  .activity-progress {
+    width: 80px;
+  }
+  .activity-progress .progress-meta span:first-child {
+    display: none;
+  }
+  .activity-status .badge {
+    font-size: 9px;
+  }
+  .pagination {
+    font-size: 10px;
+    gap: 9px;
+  }
+  .pagination-actions {
+    gap: 6px;
+  }
+  .pagination-actions > span {
+    display: none;
+  }
+  .workspace-footer {
+    gap: 14px;
+    font-size: 9px;
+  }
+  .setting-row {
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .setting-row p {
+    max-width: 200px;
+  }
+  .setting-row select {
+    min-width: 105px;
+    width: 105px;
+  }
+  .dialog-header {
+    padding: 22px 20px 0;
+  }
+  .dialog-body {
+    padding: 22px 20px;
+  }
+  .dialog-footer {
+    padding: 15px 20px;
+  }
+  .drawer {
+    width: 100%;
+  }
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+  .steps {
+    gap: 6px;
+    font-size: 10px;
+  }
+  #toast {
+    left: 17px;
+    right: 17px;
+    bottom: 17px;
+    max-width: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

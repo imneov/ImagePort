@@ -1,0 +1,55 @@
+name: Development packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Package (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            target: windows
+          - runner: macos-latest
+            target: darwin
+          - runner: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .go-version
+          cache: true
+      - name: Install Linux desktop development libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
+      - name: Check behavior and source standards
+        run: |
+          go run ./tools/check
+          go test -tags ci ./...
+      - name: Create development package with pinned Fyne tooling
+        shell: bash
+        env:
+          IMAGEPORT_TARGET: ${{ matrix.target }}
+        run: |
+          go run fyne.io/tools/cmd/fyne@v1.7.4 package --src ./cmd/client --target "$IMAGEPORT_TARGET" --name ImagePort --app-id io.github.imneov.ImagePort --icon "$GITHUB_WORKSPACE/assets/icon.png"
+      - name: Preserve macOS application permissions in an archive
+        if: runner.os == 'macOS'
+        run: tar -czf ImagePort-macos.tar.gz ImagePort.app
+      - name: Upload unsigned development artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImagePort-${{ matrix.target }}-${{ runner.arch }}-unsigned
+          path: |
+            **/ImagePort.exe
+            **/ImagePort-macos.tar.gz
+            **/ImagePort.tar.xz
+            **/ImagePort.tar.gz
+            **/ImagePort.zip
+          if-no-files-found: error

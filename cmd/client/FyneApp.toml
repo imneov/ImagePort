@@ -1,0 +1,6 @@
+[Details]
+Icon = "../../assets/icon.png"
+Name = "ImagePort"
+ID = "io.github.imneov.ImagePort"
+Version = "0.1.0"
+Build = 8
