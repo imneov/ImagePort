@@ -9,13 +9,13 @@ require (
 	github.com/docker/cli v29.9.2+incompatible
 	github.com/gofrs/flock v0.13.1
 	github.com/moby/moby/client v0.6.2
-	github.com/nicksnyder/go-i18n/v2 v2.5.1
+	github.com/nicksnyder/go-i18n/v2 v2.7.0
 	github.com/olareg/olareg v0.2.1
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/regclient/regclient v0.11.5
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/image v0.24.0
-	golang.org/x/text v0.37.0
+	golang.org/x/text v0.43.0
 	modernc.org/sqlite v1.61.0
 )
 
