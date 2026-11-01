@@ -40,7 +40,7 @@ jobs:
           mkdir -p tmp
           go run -tags ci ./cmd/client --smoke --data-dir ./tmp/smoke --screenshot ./tmp/desktop.png
       - name: Upload smoke screenshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ matrix.os }}
           path: tmp/desktop.png
