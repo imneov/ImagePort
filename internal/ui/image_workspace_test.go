@@ -47,7 +47,7 @@ func TestHarborDataReachesWorkspace(test *testing.T) {
 	view.current, view.listedMode, view.listedProject = page, mode, "team"
 	view.listedProfile = profile.ID
 	view.render("worker")
-	if len(view.rows) != 1 || view.current.Next != "2" || !strings.Contains(view.summary.Text, "83 total") || view.notice.Text != "Project: team" {
+	if len(view.rows) != 1 || view.current.Next != "2" || !strings.Contains(view.summary.Text, "共 83 条") || view.notice.Text != "项目：team" {
 		test.Fatal("workspace altered server metadata while filtering")
 	}
 }
@@ -64,7 +64,7 @@ func TestLocalImageWorkspaceUsesRealInputs(test *testing.T) {
 		test.Fatal("local filter lost content identity")
 	}
 	desktop.localImageDetails(view.engine, view.rows[0])
-	buttonByText(test, desktop.drawer, "Add tag")
+	buttonByText(test, desktop.drawer, "新增标签")
 	desktop.changeLanguage("zh-Hans")
 	buttonByText(test, desktop.drawer, "新增标签")
 	if view.filter.Text != "team/built" || view.rows[0].ID != "sha256:first" {

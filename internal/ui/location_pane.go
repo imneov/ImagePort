@@ -32,6 +32,7 @@ type locationPane struct {
 	location, account   *widget.Select
 	path, filter        *widget.Entry
 	notice, summary     *widget.Label
+	role                *widget.Label
 	tree                *widget.Tree
 	accountHost         *fyne.Container
 	content             fyne.CanvasObject
@@ -65,7 +66,8 @@ func (view *commanderView) newPane(side int) *locationPane {
 	pane.createTree()
 	pane.activeMarker = canvas.NewRectangle(theme.SeparatorColor())
 	pane.activeMarker.SetMinSize(fyne.NewSize(0, 2))
-	top := container.NewVBox(pane.activeMarker, pane.location, pane.accountHost, pane.navigation(), pane.filter, pane.notice)
+	pane.role = widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	top := container.NewVBox(pane.activeMarker, pane.role, pane.location, pane.accountHost, pane.navigation(), pane.filter, pane.notice)
 	pane.content = container.NewBorder(top, pane.summary, nil, nil, pane.tree)
 	return pane
 }

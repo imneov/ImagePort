@@ -102,11 +102,14 @@ func TestLanguageSwitchRetainsState(test *testing.T) {
 	fyneTest.Type(input, "team/image:v1")
 	desktop.tasks = []domain.Task{{ID: "existing", Spec: domain.Spec{Operation: "download", Source: domain.Source{Digest: "sha256:abc"}}, State: domain.Running, Attempts: []domain.Attempt{{Number: 1, State: domain.Running, Stage: "transfer"}}}}
 	desktop.selectedTask = "existing"
-	fyneTest.Tap(buttonByText(test, desktop.window.Content(), "Settings"))
+	fyneTest.Tap(buttonByText(test, desktop.window.Content(), "设置"))
 	selector := visit(desktop.pages[preferencesPage], func(object fyne.CanvasObject) bool {
 		selectBox, ok := object.(*widget.Select)
 		return ok && len(selectBox.Options) == 2
 	}).(*widget.Select)
+	// Chinese is the default, so switch away and back to exercise both directions.
+	selector.SetSelected("English")
+	buttonByText(test, desktop.window.Content(), "Manage targets")
 	selector.SetSelected("简体中文")
 	buttonByText(test, desktop.window.Content(), "管理目标")
 	buttonByText(test, desktop.pages[registriesPage], "添加仓库")
@@ -114,7 +117,7 @@ func TestLanguageSwitchRetainsState(test *testing.T) {
 		test.Fatal("language switch discarded input or selection")
 	}
 	if !strings.Contains(desktop.taskDetail.Text, "传输") || !strings.Contains(desktop.taskDetail.Text, "下载") {
-		test.Fatal("task values were not translated")
+		test.Fatalf("task values were not translated: %q", desktop.taskDetail.Text)
 	}
 	if desktop.app.Preferences().String("language") != "zh-Hans" {
 		test.Fatal("language not persisted")

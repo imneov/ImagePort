@@ -110,6 +110,9 @@ func (review *copyReview) show(project, folder string) {
 	review.feedback.Hide()
 	review.replace = widget.NewCheck(desktop.tr("Replace this version at the destination"), nil)
 	review.replace.Hide()
+	if project == "" {
+		project = review.defaultProject()
+	}
 	review.project.SetText(project)
 	review.defaultNames()
 	if folder == "" {
@@ -146,6 +149,43 @@ func (review *copyReview) defaultNames() {
 		filename = "image.tar"
 	}
 	review.filename.SetText(filename)
+}
+
+// defaultProject derives a destination project from the source image namespace.
+// Archive entries carry the full repository path, so their leading segment is the project.
+func (review *copyReview) defaultProject() string {
+	switch review.source.target.Kind {
+	case "archive", "filesystem":
+		for _, entry := range review.source.archive.Entries {
+			if entry.Name == review.source.entry.Path || entry.Name == review.source.entry.Name {
+				return projectOf(entry.Name)
+			}
+		}
+		return ""
+	default:
+		return projectOf(review.source.entry.Path)
+	}
+}
+
+// projectOf returns the leading repository segment, which identifies the project in a registry.
+// The namespace prefix is removed from the image name, so the leading segment is read from the
+// full reference before imageNames strips it.
+func projectOf(input string) string {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return ""
+	}
+	// Read the typed path rather than a normalized name: normalization injects an implicit
+	// "library/" namespace that would otherwise become a fabricated project.
+	name := trimmed
+	if tag := strings.Index(name, ":"); tag >= 0 {
+		name = name[:tag]
+	}
+	first, _, nested := strings.Cut(name, "/")
+	if !nested || first == "" {
+		return ""
+	}
+	return first
 }
 
 // imageNames preserves the image path below the source namespace and its explicit tag.

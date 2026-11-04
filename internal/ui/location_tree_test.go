@@ -10,6 +10,12 @@ import (
 	"github.com/imneov/ImagePort/internal/domain"
 )
 
+// rowButton returns the recycled row widget, which paints an icon and a caption.
+func rowButton(row fyne.CanvasObject) *widget.Button {
+	button, _ := row.(*widget.Button)
+	return button
+}
+
 // TestPaneUsesOnlyTree verifies browsing has no competing list or empty metadata columns.
 func TestPaneUsesOnlyTree(test *testing.T) {
 	pane := commanderFixture(test).panes[1]
@@ -23,9 +29,12 @@ func TestPaneUsesOnlyTree(test *testing.T) {
 	pane.register("", []domain.LocationEntry{entry})
 	row := pane.createRow()
 	pane.updateRow(entry.ID, row)
-	label, valid := row.(*widget.Label)
-	if !valid || label.Text != entry.Name || label.Truncation != fyne.TextTruncateEllipsis {
+	button := rowButton(row)
+	if button == nil || button.Text != entry.Name {
 		test.Fatal("tree row does not reserve its full width for the received name")
+	}
+	if button.Icon == nil {
+		test.Fatal("tree row does not show an entry icon")
 	}
 	defaultHeight := fyne.MeasureText("M", Theme().Size(theme.SizeNameText), fyne.TextStyle{}).Height + 2*theme.DefaultTheme().Size(theme.SizeNameInnerPadding)
 	if row.MinSize().Height >= defaultHeight {
@@ -44,7 +53,7 @@ func TestTreeNestedPagination(test *testing.T) {
 	pane.tree.OpenBranch(parent)
 	pane.tree.Select("version:one")
 	pane.filter.SetText("one")
-	if len(pane.visibleChildren(parent)) != 2 || pane.pages[parent].Next != "opaque-next" || !strings.Contains(pane.summary.Text, "3 total") {
+	if len(pane.visibleChildren(parent)) != 2 || pane.pages[parent].Next != "opaque-next" || !strings.Contains(pane.summary.Text, "共 3 个") {
 		test.Fatal("filter lost the branch continuation or server total")
 	}
 	pane.applyPage(parent, "opaque-next", locationResponse{page: domain.LocationPage{

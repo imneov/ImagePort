@@ -114,9 +114,12 @@ func (presenter *Presenter) browseEngine(ctx context.Context, name string) (doma
 
 // browseDirectory lists filesystem items without opening archives or following file symlinks.
 func browseDirectory(ctx context.Context, root, path string) (domain.LocationPage, error) {
+	// An empty path means "the saved root"; normalise it before any parent comparison,
+	// because filepath.Clean("") is "." and would fabricate a parent of the root folder.
 	if path == "" {
 		path = root
 	}
+	path = filepath.Clean(path)
 	if err := directoryWithin(root, path); err != nil {
 		return domain.LocationPage{}, err
 	}
@@ -145,7 +148,23 @@ func browseDirectory(ctx context.Context, root, path string) (domain.LocationPag
 	sort.SliceStable(result.Entries, func(left, right int) bool {
 		return result.Entries[left].Kind == "folder" && result.Entries[right].Kind != "folder"
 	})
+	if parent := parentEntry(root, path); parent != nil {
+		result.Entries = append([]domain.LocationEntry{*parent}, result.Entries...)
+	}
 	return result, nil
+}
+
+// parentEntry offers a file-manager style ".." row unless the folder is already the saved root.
+func parentEntry(root, path string) *domain.LocationEntry {
+	cleaned := filepath.Clean(path)
+	if cleaned == filepath.Clean(root) {
+		return nil
+	}
+	parent := filepath.Dir(cleaned)
+	if err := directoryWithin(root, parent); err != nil {
+		return nil
+	}
+	return &domain.LocationEntry{ID: "parent:" + parent, Path: parent, Name: "..", Kind: "parent"}
 }
 
 // directoryWithin checks the resolved directory remains under its saved filesystem root.

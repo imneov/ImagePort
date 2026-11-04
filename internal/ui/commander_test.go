@@ -27,14 +27,14 @@ func TestCommanderRendersReceivedRows(test *testing.T) {
 	pane := view.panes[1]
 	pane.applyPage("", "", locationResponse{page: domain.LocationPage{Entries: []domain.LocationEntry{{ID: "project:team", Name: "team", Kind: "project", Path: "team"}}, Next: "opaque-next", Total: 83, HasTotal: true}})
 	found := visit(pane.content, func(object fyne.CanvasObject) bool {
-		label, ok := object.(*widget.Label)
-		return ok && label.Text == "team"
+		button, ok := object.(*widget.Button)
+		return ok && button.Text == "team"
 	})
 	if found == nil {
 		test.Fatal("received project count exists but its row is invisible")
 	}
 	pane.filter.SetText("team")
-	if pane.pages[""].Next != "opaque-next" || !strings.Contains(pane.summary.Text, "83 total") {
+	if pane.pages[""].Next != "opaque-next" || !strings.Contains(pane.summary.Text, "共 83 个") {
 		test.Fatal("filter discarded server pagination")
 	}
 	pane.applyPage("", "opaque-next", locationResponse{page: domain.LocationPage{Entries: []domain.LocationEntry{{ID: "project:other", Name: "other", Kind: "project", Path: "other"}}, Total: 83, HasTotal: true}})
