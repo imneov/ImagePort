@@ -77,12 +77,16 @@ type rowRenderer struct {
 }
 
 // Layout places the icon at the leading edge and stretches the caption across the row.
+// Branch rows hide their icon so the tree's own chevron is the only arrow shown.
 func (renderer *rowRenderer) Layout(size fyne.Size) {
 	iconSize := theme.IconInlineSize()
 	renderer.background.Resize(size)
-	renderer.row.icon.Resize(fyne.NewSize(iconSize, iconSize))
-	renderer.row.icon.Move(fyne.NewPos(0, (size.Height-iconSize)/2))
-	offset := iconSize + theme.Padding()
+	offset := float32(0)
+	if !renderer.row.icon.Hidden {
+		renderer.row.icon.Resize(fyne.NewSize(iconSize, iconSize))
+		renderer.row.icon.Move(fyne.NewPos(0, (size.Height-iconSize)/2))
+		offset = iconSize + theme.Padding()
+	}
 	renderer.row.label.Resize(fyne.NewSize(size.Width-offset-theme.Padding(), size.Height))
 	renderer.row.label.Move(fyne.NewPos(offset, 0))
 }
@@ -91,7 +95,11 @@ func (renderer *rowRenderer) Layout(size fyne.Size) {
 func (renderer *rowRenderer) MinSize() fyne.Size {
 	iconSize := theme.IconInlineSize()
 	height := fyne.Max(renderer.row.label.MinSize().Height, iconSize)
-	return fyne.NewSize(renderer.row.label.MinSize().Width+iconSize+theme.Padding()*2, height)
+	width := renderer.row.label.MinSize().Width + theme.Padding()
+	if !renderer.row.icon.Hidden {
+		width += iconSize + theme.Padding()
+	}
+	return fyne.NewSize(width, height)
 }
 
 // Refresh repaints the row background for the current selection colour.
@@ -116,21 +124,27 @@ func (pane *locationPane) updateRow(id string, object fyne.CanvasObject) {
 	}
 	entry := pane.nodes[id]
 	row.label.SetText(entry.Name)
-	row.icon.SetResource(pane.rowIcon(entry))
+	if icon := pane.rowIcon(entry); icon != nil {
+		row.icon.SetResource(icon)
+		row.icon.Show()
+	} else {
+		row.icon.Hide()
+	}
 	row.onTap = func() { pane.selectNode(id) }
 	row.Refresh()
 }
 
 // rowIcon chooses a distinct glyph per entry kind without inventing remote metadata.
+// Branch entries return nil: the tree already paints its own expand chevron, and a second
+// glyph here would render two arrows side by side.
 func (pane *locationPane) rowIcon(entry domain.LocationEntry) fyne.Resource {
-	// Branch-like entries use a chevron so the expandable direction reads like a menu.
 	switch entry.Kind {
 	case "parent":
 		return theme.NavigateBackIcon()
 	case "folder":
 		return theme.FolderIcon()
 	case "project", "image":
-		return theme.NavigateNextIcon()
+		return nil
 	case "archive":
 		return theme.DocumentIcon()
 	case "more":
