@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"image/color"
+
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -31,6 +33,13 @@ func (pane *locationPane) createTree() {
 		}
 	}
 	pane.tree.OnSelected = pane.selectNode
+	pane.tree.OnUnselected = func(id string) {
+		pane.selected = ""
+		if id != "" {
+			pane.tree.RefreshItem(id)
+		}
+		pane.workspace.updateCommands()
+	}
 }
 
 // tappableRow is a full-width row that paints an icon and a caption and reports its own taps.
@@ -42,6 +51,21 @@ type tappableRow struct {
 	label   *widget.Label
 	onTap   func()
 	hovered bool
+	// selected drives the selection highlight so the user can see what the
+	// commands will act on, mirroring the tree's own selected-row colour.
+	selected bool
+}
+
+// MouseIn and MouseOut give the row a hover cue, matching the tree's own behaviour.
+func (row *tappableRow) MouseIn(*fyne.PointEvent) {
+	row.hovered = true
+	row.Refresh()
+}
+
+// MouseOut clears the hover cue when the pointer leaves the row.
+func (row *tappableRow) MouseOut() {
+	row.hovered = false
+	row.Refresh()
 }
 
 // newTappableRow builds a recycled row with a leading type icon and an ellipsised caption.
@@ -54,7 +78,8 @@ func (pane *locationPane) newTappableRow() *tappableRow {
 
 // CreateRenderer lays out the icon and caption as one full-width clickable row.
 func (row *tappableRow) CreateRenderer() fyne.WidgetRenderer {
-	background := canvas.NewRectangle(theme.BackgroundColor())
+	background := canvas.NewRectangle(color.Transparent)
+	background.Hide()
 	return &rowRenderer{row: row, background: background,
 		objects: []fyne.CanvasObject{background, row.icon, row.label}}
 }
@@ -102,9 +127,26 @@ func (renderer *rowRenderer) MinSize() fyne.Size {
 	return fyne.NewSize(width, height)
 }
 
-// Refresh repaints the row background for the current selection colour.
+// Refresh repaints the row background for the selection or hover state.
 func (renderer *rowRenderer) Refresh() {
-	renderer.background.FillColor = theme.BackgroundColor()
+	th := renderer.row.Theme()
+	variant := fyne.CurrentApp().Settings().ThemeVariant()
+	renderer.background.CornerRadius = th.Size(theme.SizeNameSelectionRadius)
+	// The row owns its selection paint: the tree's own highlight sits underneath this
+	// content, so drawing it here is what makes the selection actually visible.
+	switch {
+	case renderer.row.selected:
+		renderer.background.FillColor = th.Color(theme.ColorNameSelection, variant)
+		renderer.background.Show()
+	case renderer.row.hovered:
+		renderer.background.FillColor = th.Color(theme.ColorNameHover, variant)
+		renderer.background.Show()
+	default:
+		renderer.background.Hide()
+	}
+	// Re-layout so the background matches the row after being shown from hidden,
+	// where it may still carry a zero size and would paint nothing.
+	renderer.Layout(renderer.row.Size())
 	renderer.background.Refresh()
 	renderer.row.icon.Refresh()
 	renderer.row.label.Refresh()
@@ -130,6 +172,7 @@ func (pane *locationPane) updateRow(id string, object fyne.CanvasObject) {
 	} else {
 		row.icon.Hide()
 	}
+	row.selected = pane.selected == id
 	row.onTap = func() { pane.selectNode(id) }
 	row.Refresh()
 }
@@ -199,7 +242,15 @@ func (pane *locationPane) selectNode(id string) {
 		pane.load(parent, pane.pages[parent].Next)
 		return
 	}
+	previous := pane.selected
 	pane.selected = id
+	// Rebind the affected rows so the highlight moves with the selection, and keep the
+	// tree's own selection in sync for keyboard navigation and accessibility.
+	pane.tree.Select(id)
+	if previous != "" && previous != id {
+		pane.tree.RefreshItem(previous)
+	}
+	pane.tree.RefreshItem(id)
 	pane.renderSummary()
 	pane.workspace.updateCommands()
 }
