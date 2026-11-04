@@ -165,28 +165,8 @@ func (view *commanderView) activate(side int) {
 			pane.activeMarker.FillColor = theme.PrimaryColor()
 		}
 		pane.activeMarker.Refresh()
-		view.renderRole(pane, index == side)
 	}
 	view.updateCommands()
-}
-
-// renderRole labels each pane as the upload source or the destination so direction is obvious.
-func (view *commanderView) renderRole(pane *locationPane, isSource bool) {
-	if pane.role == nil {
-		return
-	}
-	desktop := view.desktop
-	role := desktop.tr("Destination")
-	if isSource {
-		role = desktop.tr("Source")
-	}
-	pane.role.SetText(role)
-	if isSource {
-		pane.role.TextStyle = fyne.TextStyle{Bold: true}
-	} else {
-		pane.role.TextStyle = fyne.TextStyle{}
-	}
-	pane.role.Refresh()
 }
 
 // swap exchanges location state while keeping widgets, focus and callbacks on their own side.
@@ -199,10 +179,9 @@ func (view *commanderView) swap() {
 
 // translate updates existing pane labels while preserving paths and selected content.
 func (view *commanderView) translate() {
-	for index, pane := range view.panes {
+	for _, pane := range view.panes {
 		pane.reloadOptions()
 		pane.render()
-		view.renderRole(pane, index == view.active)
 	}
 }
 

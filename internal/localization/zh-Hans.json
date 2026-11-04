@@ -395,7 +395,6 @@
   "The source image and its existing tags are retained.": "源镜像及其现有标签将保留。",
   "Repository name": "镜像名称",
   "Destination tag": "目标标签",
-  "Destination": "目标",
   "project/image": "项目/镜像名称",
   "Use selected image": "使用所选镜像",
   "Select image": "选择镜像",
@@ -508,6 +507,5 @@
   "Folder": "文件夹",
   "File": "文件",
   "Font license": "字体许可证",
-  "Source": "源",
   "Select an image on the left to upload": "在左侧选择要上传的镜像"
 }
