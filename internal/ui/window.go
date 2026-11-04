@@ -62,7 +62,8 @@ func New(app fyne.App, window fyne.Window, service *presenter.Presenter, version
 	if err := registerToolkitLocale(); err != nil {
 		return nil, err
 	}
-	language := app.Preferences().StringWithFallback("language", "en")
+	// Chinese is the default for new installations; an explicit saved preference wins.
+	language := app.Preferences().StringWithFallback("language", "zh-Hans")
 	if language != "zh-Hans" {
 		language = "en"
 	}

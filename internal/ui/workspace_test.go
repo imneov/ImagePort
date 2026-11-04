@@ -42,7 +42,7 @@ func TestRegistryPageKeepsServerRows(test *testing.T) {
 func TestPlatformSelectionIsExplicit(test *testing.T) {
 	desktop := testDesktop(test)
 	desktop.selectSource(domain.Profile{}, []domain.Source{{Reference: "registry.example.com/team/api:one", Digest: "sha256:abc", Platform: "linux/arm64"}})
-	useImage := buttonByText(test, desktop.drawer, "Use selected image")
+	useImage := buttonByText(test, desktop.drawer, "使用所选镜像")
 	radio := visit(desktop.drawer, func(object fyne.CanvasObject) bool { _, valid := object.(*widget.RadioGroup); return valid }).(*widget.RadioGroup)
 	if !useImage.Disabled() || radio.Selected != "" {
 		test.Fatal("a platform was implicitly chosen")
@@ -101,7 +101,7 @@ func TestThemeAndNavigationPersistState(test *testing.T) {
 		desktop.show(index)
 	}
 	desktop.show(imagesPage)
-	if desktop.browser.repository.Text != "team/api:stable" || desktop.breadcrumb.Text != "Images" {
+	if desktop.browser.repository.Text != "team/api:stable" || desktop.breadcrumb.Text != "镜像" {
 		test.Fatal("navigation discarded image input or breadcrumb")
 	}
 }

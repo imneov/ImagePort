@@ -21,8 +21,14 @@ func (current portTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVaria
 	if current.variant != nil {
 		variant = *current.variant
 	}
+	// Selection must read clearly against the list background; the theme default is a
+	// 25%-alpha wash that is almost invisible on the light surface.
 	if variant == theme.VariantDark {
 		switch name {
+		case theme.ColorNameSelection:
+			return color.NRGBA{R: 59, G: 130, B: 246, A: 110}
+		case theme.ColorNameHover:
+			return color.NRGBA{R: 51, G: 65, B: 85, A: 200}
 		case theme.ColorNameBackground:
 			return color.NRGBA{R: 15, G: 23, B: 42, A: 255}
 		case theme.ColorNameButton:
@@ -32,6 +38,10 @@ func (current portTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVaria
 		}
 	} else {
 		switch name {
+		case theme.ColorNameSelection:
+			return color.NRGBA{R: 37, G: 99, B: 235, A: 56}
+		case theme.ColorNameHover:
+			return color.NRGBA{R: 226, G: 232, B: 240, A: 255}
 		case theme.ColorNamePrimary:
 			return color.NRGBA{R: 37, G: 99, B: 235, A: 255}
 		case theme.ColorNameBackground:
