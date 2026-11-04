@@ -220,6 +220,8 @@ func (view *commanderView) updateCommands() {
 	if selected && entry.Kind != "more" {
 		view.inspect.Enable()
 	}
+	// Only concrete versions and archives can be copied; a collapsed image name has no content
+	// to pin yet, so the user must open it and pick a tag.
 	if !selected || (entry.Kind != "version" && entry.Kind != "archive") {
 		return
 	}

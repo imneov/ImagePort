@@ -10,10 +10,10 @@ import (
 	"github.com/imneov/ImagePort/internal/domain"
 )
 
-// rowButton returns the recycled row widget, which paints an icon and a caption.
-func rowButton(row fyne.CanvasObject) *widget.Button {
-	button, _ := row.(*widget.Button)
-	return button
+// rowWidget returns the recycled row, which paints an icon and a caption.
+func rowWidget(row fyne.CanvasObject) *tappableRow {
+	value, _ := row.(*tappableRow)
+	return value
 }
 
 // TestPaneUsesOnlyTree verifies browsing has no competing list or empty metadata columns.
@@ -27,13 +27,13 @@ func TestPaneUsesOnlyTree(test *testing.T) {
 	}
 	entry := domain.LocationEntry{ID: "image:team/service", Name: "team/service-with-a-long-name", Kind: "image"}
 	pane.register("", []domain.LocationEntry{entry})
-	row := pane.createRow()
+	row := pane.newTappableRow()
 	pane.updateRow(entry.ID, row)
-	button := rowButton(row)
-	if button == nil || button.Text != entry.Name {
+	cell := rowWidget(row)
+	if cell == nil || cell.label.Text != entry.Name {
 		test.Fatal("tree row does not reserve its full width for the received name")
 	}
-	if button.Icon == nil {
+	if cell.icon.Resource == nil {
 		test.Fatal("tree row does not show an entry icon")
 	}
 	defaultHeight := fyne.MeasureText("M", Theme().Size(theme.SizeNameText), fyne.TextStyle{}).Height + 2*theme.DefaultTheme().Size(theme.SizeNameInnerPadding)

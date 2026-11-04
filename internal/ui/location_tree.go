@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/imneov/ImagePort/internal/domain"
@@ -22,7 +23,7 @@ func (pane *locationPane) createTree() {
 			return false
 		}
 		return entry.Kind == "project" || entry.Kind == "image" || entry.Kind == "folder"
-	}, func(bool) fyne.CanvasObject { return pane.createRow() }, func(id string, _ bool, object fyne.CanvasObject) { pane.updateRow(id, object) })
+	}, func(bool) fyne.CanvasObject { return pane.newTappableRow() }, func(id string, _ bool, object fyne.CanvasObject) { pane.updateRow(id, object) })
 	pane.tree.OnBranchOpened = func(id string) {
 		pane.workspace.activate(pane.side)
 		if !pane.loaded[id] && !pane.pending[id] {
@@ -32,35 +33,104 @@ func (pane *locationPane) createTree() {
 	pane.tree.OnSelected = pane.selectNode
 }
 
-// createRow returns a recycled icon-and-name row.
-// A Button paints an icon and a caption in one widget, so virtualised rebinding stays consistent.
-func (pane *locationPane) createRow() fyne.CanvasObject {
-	button := widget.NewButton("", nil)
-	button.Alignment = widget.ButtonAlignLeading
-	button.Importance = widget.LowImportance
-	return button
+// tappableRow is a full-width row that paints an icon and a caption and reports its own taps.
+// It replaces Tree selection for row activation: Tree rows cannot contain a widget that
+// implements Tappable, because that widget swallows the tap before the tree sees it.
+type tappableRow struct {
+	widget.BaseWidget
+	icon    *widget.Icon
+	label   *widget.Label
+	onTap   func()
+	hovered bool
 }
 
-// updateRow binds the recycled object to id, retaining the full name for truncation and inspection.
+// newTappableRow builds a recycled row with a leading type icon and an ellipsised caption.
+func (pane *locationPane) newTappableRow() *tappableRow {
+	row := &tappableRow{icon: widget.NewIcon(theme.FileIcon()), label: widget.NewLabel("")}
+	row.label.Truncation = fyne.TextTruncateEllipsis
+	row.ExtendBaseWidget(row)
+	return row
+}
+
+// CreateRenderer lays out the icon and caption as one full-width clickable row.
+func (row *tappableRow) CreateRenderer() fyne.WidgetRenderer {
+	background := canvas.NewRectangle(theme.BackgroundColor())
+	return &rowRenderer{row: row, background: background,
+		objects: []fyne.CanvasObject{background, row.icon, row.label}}
+}
+
+// Tapped forwards a row click to the pane so selection and folder entry behave consistently.
+func (row *tappableRow) Tapped(*fyne.PointEvent) {
+	if row.onTap != nil {
+		row.onTap()
+	}
+}
+
+// TappedSecondary reports the same activation for a secondary click without opening menus.
+func (row *tappableRow) TappedSecondary(*fyne.PointEvent) {}
+
+// rowRenderer paints the row background and positions the icon and caption.
+type rowRenderer struct {
+	row        *tappableRow
+	background *canvas.Rectangle
+	objects    []fyne.CanvasObject
+}
+
+// Layout places the icon at the leading edge and stretches the caption across the row.
+func (renderer *rowRenderer) Layout(size fyne.Size) {
+	iconSize := theme.IconInlineSize()
+	renderer.background.Resize(size)
+	renderer.row.icon.Resize(fyne.NewSize(iconSize, iconSize))
+	renderer.row.icon.Move(fyne.NewPos(0, (size.Height-iconSize)/2))
+	offset := iconSize + theme.Padding()
+	renderer.row.label.Resize(fyne.NewSize(size.Width-offset-theme.Padding(), size.Height))
+	renderer.row.label.Move(fyne.NewPos(offset, 0))
+}
+
+// MinSize reserves a single text line so rows keep the compact commander density.
+func (renderer *rowRenderer) MinSize() fyne.Size {
+	iconSize := theme.IconInlineSize()
+	height := fyne.Max(renderer.row.label.MinSize().Height, iconSize)
+	return fyne.NewSize(renderer.row.label.MinSize().Width+iconSize+theme.Padding()*2, height)
+}
+
+// Refresh repaints the row background for the current selection colour.
+func (renderer *rowRenderer) Refresh() {
+	renderer.background.FillColor = theme.BackgroundColor()
+	renderer.background.Refresh()
+	renderer.row.icon.Refresh()
+	renderer.row.label.Refresh()
+}
+
+// Objects returns the painted objects in draw order.
+func (renderer *rowRenderer) Objects() []fyne.CanvasObject { return renderer.objects }
+
+// Destroy releases no external resources.
+func (renderer *rowRenderer) Destroy() {}
+
+// updateRow binds a recycled row to its entry and forwards taps back to this pane.
 func (pane *locationPane) updateRow(id string, object fyne.CanvasObject) {
-	button, ok := object.(*widget.Button)
+	row, ok := object.(*tappableRow)
 	if !ok {
 		return
 	}
 	entry := pane.nodes[id]
-	button.SetText(entry.Name)
-	button.SetIcon(pane.rowIcon(entry))
+	row.label.SetText(entry.Name)
+	row.icon.SetResource(pane.rowIcon(entry))
+	row.onTap = func() { pane.selectNode(id) }
+	row.Refresh()
 }
 
 // rowIcon chooses a distinct glyph per entry kind without inventing remote metadata.
 func (pane *locationPane) rowIcon(entry domain.LocationEntry) fyne.Resource {
+	// Branch-like entries use a chevron so the expandable direction reads like a menu.
 	switch entry.Kind {
 	case "parent":
 		return theme.NavigateBackIcon()
-	case "folder", "project":
+	case "folder":
 		return theme.FolderIcon()
-	case "image":
-		return theme.StorageIcon()
+	case "project", "image":
+		return theme.NavigateNextIcon()
 	case "archive":
 		return theme.DocumentIcon()
 	case "more":
