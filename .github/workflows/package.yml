@@ -3,12 +3,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Version to use for branch validation without publishing
-        required: true
-        default: v0.1.0-ci.1
 
 permissions:
   contents: read
@@ -30,7 +24,7 @@ jobs:
         id: version
         shell: bash
         env:
-          IMAGEPORT_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          IMAGEPORT_TAG: ${{ github.ref_name }}
         run: |
           if [[ ! "$IMAGEPORT_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
             echo '::error::Expected vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE'
