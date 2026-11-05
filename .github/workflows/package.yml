@@ -151,10 +151,31 @@ jobs:
           name: release-${{ matrix.platform }}-${{ matrix.arch }}
           path: dist/*
           if-no-files-found: error
+          overwrite: true
+
+  checksums:
+    name: Verify release assets and generate checksums
+    needs: package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: dist
+        run: sha256sum -- ImagePort-* > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-checksums
+          path: dist/SHA256SUMS
+          if-no-files-found: error
+          overwrite: true
 
   release:
     name: Publish GitHub Release
-    needs: [version, package]
+    needs: [version, checksums]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     permissions:
@@ -169,9 +190,9 @@ jobs:
           pattern: release-*
           path: dist
           merge-multiple: true
-      - name: Generate checksums
+      - name: Verify checksums
         working-directory: dist
-        run: sha256sum -- ImagePort-* > SHA256SUMS
+        run: sha256sum --check SHA256SUMS
       - name: Publish packages and release notes
         shell: bash
         run: |
