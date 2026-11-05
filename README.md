@@ -103,16 +103,34 @@ applications use the native driver. Integration tests start a real in-process OC
 registry and generate small archives; they do not require Docker or external
 registry credentials. Use `go run` for local quick checks.
 
-The **Development packages** GitHub Actions workflow runs on pushes to `main`,
-`v*` tags, or manually through **Actions → Development packages → Run workflow**.
-It prepares unsigned Windows/Linux x64 packages and separate macOS Apple Silicon
-(`arm64`) and Intel (`amd64`) packages using native runners.
+The **Release** GitHub Actions workflow runs only when a version tag such as
+`v0.1.0` is pushed. Ordinary branch pushes and pull requests run CI without
+packaging or publishing a release. Tags such as `v0.2.0-rc.1` create prereleases.
 
-Download the matching artifact from the workflow run's **Artifacts** section.
-For macOS, choose `ImagePort-darwin-arm64-unsigned` or
-`ImagePort-darwin-amd64-unsigned`, extract the enclosed `.tar.gz`, then move
-`ImagePort.app` to Applications. The tar archive preserves executable permissions.
-Signing, notarization and native installation acceptance remain release work.
+The workflow tests and packages Linux, Windows and macOS for both x64 (`amd64`)
+and ARM64 (`arm64`) on native runners. After all six packages succeed, it creates
+a GitHub Release with generated release notes, the six packages and `SHA256SUMS`.
+Failed packaging prevents publication; a failed upload can be retried using the
+existing draft release. Published releases are not overwritten.
+
+Download packages from the repository's **Releases** page:
+
+| System | Architectures | Package |
+| --- | --- | --- |
+| Linux | `amd64`, `arm64` | `ImagePort-vVERSION-linux-ARCH.tar.xz` |
+| Windows | `amd64`, `arm64` | `ImagePort-vVERSION-windows-ARCH.zip` |
+| macOS | `amd64` (Intel), `arm64` (Apple Silicon) | `ImagePort-vVERSION-macos-ARCH.zip` |
+
+Extract the macOS ZIP and move `ImagePort.app` to Applications. The archive
+preserves executable permissions. Packages are currently unsigned; signing,
+notarization and native installation acceptance remain release work.
+
+To publish after the release workflow has been merged, tag the intended commit:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
 
 ## Repository layout
 

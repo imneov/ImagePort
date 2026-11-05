@@ -16,6 +16,8 @@ type Profile struct {
 type Source struct {
 	Reference, IndexDigest, Digest, Platform string
 	Size                                     int64
+	// LayoutPath identifies a private normalized OCI layout during a transfer.
+	LayoutPath string
 }
 
 // ArchiveEntry describes one selectable root, preserving all its platforms.

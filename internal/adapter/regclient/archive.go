@@ -25,10 +25,7 @@ func (client *Client) ExportEntry(ctx context.Context, path string, entry domain
 		}
 	}()
 	connection := sdk.New(sdk.WithSlog(slogDiscard()))
-	reference, err := ref.New(source.Reference)
-	if err != nil {
-		return "", err
-	}
+	reference := layoutReference(source.LayoutPath).SetDigest(source.Digest)
 	image, err := connection.ManifestGet(ctx, reference)
 	if err != nil {
 		return "", registry.Safe(err)
