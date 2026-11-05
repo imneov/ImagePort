@@ -1,55 +1,236 @@
-name: Development packages
+name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags: ['v*']
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  version:
+    name: Validate release version
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      numeric: ${{ steps.version.outputs.numeric }}
+    steps:
+      - name: Read version from tag
+        id: version
+        shell: bash
+        env:
+          IMAGEPORT_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$IMAGEPORT_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo '::error::Expected vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE'
+            exit 1
+          fi
+          version="${IMAGEPORT_TAG#v}"
+          # Windows executable resources require a numeric application version.
+          {
+            echo "tag=$IMAGEPORT_TAG"
+            echo "version=$version"
+            echo "numeric=${version%%-*}"
+          } >> "$GITHUB_OUTPUT"
+
   package:
-    name: Package (${{ matrix.target }})
+    name: Package (${{ matrix.platform }}/${{ matrix.arch }})
+    needs: version
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: windows-latest
-            target: windows
-          - runner: macos-latest
-            target: darwin
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
+            platform: linux
             target: linux
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux
+            target: linux
+            arch: arm64
+          - runner: windows-2025
+            platform: windows
+            target: windows
+            arch: amd64
+            msystem: CLANG64
+            compiler: mingw-w64-clang-x86_64-clang
+          - runner: windows-11-arm
+            platform: windows
+            target: windows
+            arch: arm64
+            msystem: CLANGARM64
+            compiler: mingw-w64-clang-aarch64-clang
+          - runner: macos-15-intel
+            platform: macos
+            target: darwin
+            arch: amd64
+          - runner: macos-latest
+            platform: macos
+            target: darwin
+            arch: arm64
     runs-on: ${{ matrix.runner }}
+    env:
+      CGO_ENABLED: '1'
+      IMAGEPORT_ASSET: ImagePort-${{ needs.version.outputs.tag }}-${{ matrix.platform }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: .go-version
           cache: true
+      - name: Verify native build architecture
+        shell: bash
+        env:
+          IMAGEPORT_ARCH: ${{ matrix.arch }}
+        run: test "$(go env GOHOSTARCH)" = "$IMAGEPORT_ARCH"
       - name: Install Linux desktop development libraries
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev
+      - name: Install native Windows C compiler
+        if: runner.os == 'Windows'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          install: ${{ matrix.compiler }}
+      - name: Configure Windows C compiler
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+          IMAGEPORT_MSYSTEM: ${{ matrix.msystem }}
+        run: |
+          $compilerDirectory = Join-Path $env:MSYS2_LOCATION "$($env:IMAGEPORT_MSYSTEM.ToLower())\bin"
+          $compilerDirectory >> $env:GITHUB_PATH
+          'CC=clang' >> $env:GITHUB_ENV
+          'CXX=clang++' >> $env:GITHUB_ENV
       - name: Check behavior and source standards
         run: |
           go run ./tools/check
           go test -tags ci ./...
-      - name: Create development package with pinned Fyne tooling
+      - name: Package with pinned Fyne tooling
         shell: bash
         env:
           IMAGEPORT_TARGET: ${{ matrix.target }}
+          IMAGEPORT_VERSION: ${{ needs.version.outputs.numeric }}
+          IMAGEPORT_RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
-          go run fyne.io/tools/cmd/fyne@v1.7.4 package --src ./cmd/client --target "$IMAGEPORT_TARGET" --name ImagePort --app-id io.github.imneov.ImagePort --icon "$GITHUB_WORKSPACE/assets/icon.png"
-      - name: Preserve macOS application permissions in an archive
+          go run fyne.io/tools/cmd/fyne@v1.7.4 package --src ./cmd/client --target "$IMAGEPORT_TARGET" --name ImagePort --app-id io.github.imneov.ImagePort --icon "$GITHUB_WORKSPACE/assets/icon.png" --app-version "$IMAGEPORT_VERSION" --app-build "$GITHUB_RUN_NUMBER" --metadata "releaseVersion=$IMAGEPORT_RELEASE_VERSION" --release
+      - name: Archive macOS application
         if: runner.os == 'macOS'
-        run: tar -czf ImagePort-macos.tar.gz ImagePort.app
-      - name: Upload unsigned development artifacts
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent ImagePort.app "dist/${IMAGEPORT_ASSET}.zip"
+      - name: Archive Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path cmd/client/ImagePort.exe -DestinationPath "dist/$env:IMAGEPORT_ASSET.zip"
+      - name: Collect Linux package
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p dist
+          mv ImagePort.tar.xz "dist/${IMAGEPORT_ASSET}.tar.xz"
+      - name: Verify packaged application version
+        timeout-minutes: 2
+        shell: bash
+        env:
+          IMAGEPORT_PLATFORM: ${{ matrix.platform }}
+          IMAGEPORT_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          verification="$RUNNER_TEMP/imageport-package-verification"
+          mkdir -p "$verification"
+          case "$IMAGEPORT_PLATFORM" in
+            macos)
+              ditto -x -k "dist/${IMAGEPORT_ASSET}.zip" "$verification"
+              executable=$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$verification/ImagePort.app/Contents/Info.plist")
+              binary="$verification/ImagePort.app/Contents/MacOS/$executable"
+              ;;
+            windows)
+              unzip -q "dist/${IMAGEPORT_ASSET}.zip" -d "$verification"
+              binary="$verification/ImagePort.exe"
+              ;;
+            linux)
+              tar -xJf "dist/${IMAGEPORT_ASSET}.tar.xz" -C "$verification"
+              binary=$(find "$verification" -type f -path '*/bin/*')
+              ;;
+          esac
+          actual_version="$("$binary" --version)"
+          if [[ "$actual_version" != "$IMAGEPORT_VERSION" ]]; then
+            echo "::error::Packaged version '$actual_version' does not match '$IMAGEPORT_VERSION'"
+            exit 1
+          fi
+          echo "Verified packaged version: $actual_version"
+      - name: Upload release package
         uses: actions/upload-artifact@v4
         with:
-          name: ImagePort-${{ matrix.target }}-${{ runner.arch }}-unsigned
-          path: |
-            **/ImagePort.exe
-            **/ImagePort-macos.tar.gz
-            **/ImagePort.tar.xz
-            **/ImagePort.tar.gz
-            **/ImagePort.zip
+          name: release-${{ matrix.platform }}-${{ matrix.arch }}
+          path: dist/*
           if-no-files-found: error
+          overwrite: true
+
+  checksums:
+    name: Verify release assets and generate checksums
+    needs: package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: dist
+        run: sha256sum -- ImagePort-* > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-checksums
+          path: dist/SHA256SUMS
+          if-no-files-found: error
+          overwrite: true
+
+  release:
+    name: Publish GitHub Release
+    needs: [version, checksums]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      IMAGEPORT_TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Verify checksums
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS
+      - name: Publish packages and release notes
+        shell: bash
+        run: |
+          prerelease=false
+          if [[ "$IMAGEPORT_TAG" == *-* ]]; then
+            prerelease=true
+          fi
+          if gh release view "$IMAGEPORT_TAG" --json isDraft --jq .isDraft > "$RUNNER_TEMP/release-is-draft"; then
+            if [[ "$(cat "$RUNNER_TEMP/release-is-draft")" != true ]]; then
+              echo '::error::This release is already published; use a new version tag'
+              exit 1
+            fi
+            gh release upload "$IMAGEPORT_TAG" dist/* --clobber
+          else
+            gh release create "$IMAGEPORT_TAG" dist/* --verify-tag --draft --generate-notes --title "ImagePort $IMAGEPORT_TAG"
+          fi
+          gh release edit "$IMAGEPORT_TAG" --draft=false --prerelease="$prerelease"

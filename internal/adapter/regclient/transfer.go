@@ -37,8 +37,8 @@ func (client *Client) Copy(ctx context.Context, profile domain.Profile, source d
 		return err
 	}
 	var sourceRef ref.Ref
-	if len(source.Reference) > 9 && source.Reference[:9] == "ocidir://" {
-		sourceRef, err = ref.New(source.Reference)
+	if source.LayoutPath != "" {
+		sourceRef = layoutReference(source.LayoutPath).SetDigest(source.Digest)
 	} else {
 		sourceRef, err = pinned(profile, source)
 	}
@@ -102,10 +102,7 @@ func (client *Client) Normalize(ctx context.Context, path string, entry domain.A
 	}
 	cleanup := func() error { return os.RemoveAll(directory) }
 	connection := sdk.New(sdk.WithSlog(slogDiscard()))
-	reference, err := ref.New("ocidir://" + filepath.ToSlash(directory) + ":import")
-	if err != nil {
-		return "", domain.Source{}, nil, errors.Join(err, cleanup())
-	}
+	reference := layoutReference(directory).SetTag("import")
 	file, err := os.Open(path)
 	if err != nil {
 		return "", domain.Source{}, nil, errors.Join(err, cleanup())
@@ -123,5 +120,11 @@ func (client *Client) Normalize(ctx context.Context, path string, entry domain.A
 		return "", domain.Source{}, nil, errors.Join(registry.Safe(err), cleanup())
 	}
 	digest := image.GetDescriptor().Digest.String()
-	return digest, domain.Source{Reference: reference.SetDigest(digest).CommonName(), Digest: digest}, cleanup, nil
+	return digest, domain.Source{LayoutPath: directory, Digest: digest}, cleanup, nil
+}
+
+// layoutReference binds a private native directory to the SDK without parsing it
+// as registry syntax, which cannot represent drive letters or Unicode paths.
+func layoutReference(directory string) ref.Ref {
+	return ref.Ref{Scheme: "ocidir", Path: filepath.ToSlash(directory)}
 }

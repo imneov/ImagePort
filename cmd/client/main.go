@@ -40,7 +40,12 @@ func run() error {
 	directory := flag.String("data-dir", "", "metadata directory (defaults to the OS configuration directory)")
 	smoke := flag.Bool("smoke", false, "open and capture the desktop, then exit (use -tags ci without a display)")
 	screenshot := flag.String("screenshot", "", "optional PNG path for smoke verification")
+	showVersion := flag.Bool("version", false, "print the application version and exit")
 	flag.Parse()
+	if *showVersion {
+		_, err := fmt.Fprintln(os.Stdout, applicationVersion(newApplication().Metadata()))
+		return err
+	}
 	path, err := dataPath(*directory)
 	if err != nil {
 		return err
@@ -125,7 +130,7 @@ func capture(window fyne.Window, filename string) error {
 func launch(application fyne.App, service *presenter.Presenter, smoke bool, screenshot string) error {
 	window := application.NewWindow("ImagePort · Image Management")
 	window.SetIcon(theme.StorageIcon())
-	if _, err := ui.New(application, window, service, version); err != nil {
+	if _, err := ui.New(application, window, service, applicationVersion(application.Metadata())); err != nil {
 		return err
 	}
 	if smoke {
