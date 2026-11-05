@@ -126,9 +126,9 @@ jobs:
         env:
           IMAGEPORT_TARGET: ${{ matrix.target }}
           IMAGEPORT_VERSION: ${{ needs.version.outputs.numeric }}
-          GOFLAGS: -ldflags=-X=main.version=${{ needs.version.outputs.version }}
+          IMAGEPORT_RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: |
-          go run fyne.io/tools/cmd/fyne@v1.7.4 package --src ./cmd/client --target "$IMAGEPORT_TARGET" --name ImagePort --app-id io.github.imneov.ImagePort --icon "$GITHUB_WORKSPACE/assets/icon.png" --app-version "$IMAGEPORT_VERSION" --app-build "$GITHUB_RUN_NUMBER" --release
+          go run fyne.io/tools/cmd/fyne@v1.7.4 package --src ./cmd/client --target "$IMAGEPORT_TARGET" --name ImagePort --app-id io.github.imneov.ImagePort --icon "$GITHUB_WORKSPACE/assets/icon.png" --app-version "$IMAGEPORT_VERSION" --app-build "$GITHUB_RUN_NUMBER" --metadata "releaseVersion=$IMAGEPORT_RELEASE_VERSION" --release
       - name: Archive macOS application
         if: runner.os == 'macOS'
         run: |
@@ -145,6 +145,36 @@ jobs:
         run: |
           mkdir -p dist
           mv ImagePort.tar.xz "dist/${IMAGEPORT_ASSET}.tar.xz"
+      - name: Verify packaged application version
+        timeout-minutes: 2
+        shell: bash
+        env:
+          IMAGEPORT_PLATFORM: ${{ matrix.platform }}
+          IMAGEPORT_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          verification="$RUNNER_TEMP/imageport-package-verification"
+          mkdir -p "$verification"
+          case "$IMAGEPORT_PLATFORM" in
+            macos)
+              ditto -x -k "dist/${IMAGEPORT_ASSET}.zip" "$verification"
+              executable=$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$verification/ImagePort.app/Contents/Info.plist")
+              binary="$verification/ImagePort.app/Contents/MacOS/$executable"
+              ;;
+            windows)
+              unzip -q "dist/${IMAGEPORT_ASSET}.zip" -d "$verification"
+              binary="$verification/ImagePort.exe"
+              ;;
+            linux)
+              tar -xJf "dist/${IMAGEPORT_ASSET}.tar.xz" -C "$verification"
+              binary=$(find "$verification" -type f -path '*/bin/*')
+              ;;
+          esac
+          actual_version="$("$binary" --version)"
+          if [[ "$actual_version" != "$IMAGEPORT_VERSION" ]]; then
+            echo "::error::Packaged version '$actual_version' does not match '$IMAGEPORT_VERSION'"
+            exit 1
+          fi
+          echo "Verified packaged version: $actual_version"
       - name: Upload release package
         uses: actions/upload-artifact@v4
         with:
