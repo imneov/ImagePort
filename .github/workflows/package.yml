@@ -75,7 +75,7 @@ jobs:
             platform: macos
             target: darwin
             arch: amd64
-          - runner: macos-15
+          - runner: macos-latest
             platform: macos
             target: darwin
             arch: arm64
