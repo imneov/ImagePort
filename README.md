@@ -103,11 +103,16 @@ applications use the native driver. Integration tests start a real in-process OC
 registry and generate small archives; they do not require Docker or external
 registry credentials. Use `go run` for local quick checks.
 
-The manually triggered **Development packages** GitHub Actions workflow prepares
-unsigned packages on Windows, macOS and Linux runners. The macOS application is
-archived before upload to preserve executable permissions. This workflow has not
-yet been executed for this initial implementation; signing, notarization and
-native installation acceptance remain release work.
+The **Development packages** GitHub Actions workflow runs on pushes to `main`,
+`v*` tags, or manually through **Actions → Development packages → Run workflow**.
+It prepares unsigned Windows/Linux x64 packages and separate macOS Apple Silicon
+(`arm64`) and Intel (`amd64`) packages using native runners.
+
+Download the matching artifact from the workflow run's **Artifacts** section.
+For macOS, choose `ImagePort-darwin-arm64-unsigned` or
+`ImagePort-darwin-amd64-unsigned`, extract the enclosed `.tar.gz`, then move
+`ImagePort.app` to Applications. The tar archive preserves executable permissions.
+Signing, notarization and native installation acceptance remain release work.
 
 ## Repository layout
 

@@ -1,6 +1,9 @@
 name: Development packages
 
 on:
+  push:
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -8,17 +11,23 @@ permissions:
 
 jobs:
   package:
-    name: Package (${{ matrix.target }})
+    name: Package (${{ matrix.target }}/${{ matrix.arch }})
     strategy:
       fail-fast: false
       matrix:
         include:
           - runner: windows-latest
             target: windows
-          - runner: macos-latest
+            arch: amd64
+          - runner: macos-15
             target: darwin
+            arch: arm64
+          - runner: macos-15-intel
+            target: darwin
+            arch: amd64
           - runner: ubuntu-latest
             target: linux
+            arch: amd64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +35,11 @@ jobs:
         with:
           go-version-file: .go-version
           cache: true
+      - name: Verify native build architecture
+        shell: bash
+        env:
+          IMAGEPORT_ARCH: ${{ matrix.arch }}
+        run: test "$(go env GOHOSTARCH)" = "$IMAGEPORT_ARCH"
       - name: Install Linux desktop development libraries
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
@@ -41,14 +55,16 @@ jobs:
           go run fyne.io/tools/cmd/fyne@v1.7.4 package --src ./cmd/client --target "$IMAGEPORT_TARGET" --name ImagePort --app-id io.github.imneov.ImagePort --icon "$GITHUB_WORKSPACE/assets/icon.png"
       - name: Preserve macOS application permissions in an archive
         if: runner.os == 'macOS'
-        run: tar -czf ImagePort-macos.tar.gz ImagePort.app
+        env:
+          IMAGEPORT_ARCH: ${{ matrix.arch }}
+        run: tar -czf "ImagePort-macos-${IMAGEPORT_ARCH}.tar.gz" ImagePort.app
       - name: Upload unsigned development artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ImagePort-${{ matrix.target }}-${{ runner.arch }}-unsigned
+          name: ImagePort-${{ matrix.target }}-${{ matrix.arch }}-unsigned
           path: |
             **/ImagePort.exe
-            **/ImagePort-macos.tar.gz
+            **/ImagePort-macos-*.tar.gz
             **/ImagePort.tar.xz
             **/ImagePort.tar.gz
             **/ImagePort.zip
