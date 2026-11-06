@@ -59,12 +59,6 @@ jobs:
             arch: amd64
             msystem: CLANG64
             compiler: mingw-w64-clang-x86_64-clang
-          - runner: windows-11-arm
-            platform: windows
-            target: windows
-            arch: arm64
-            msystem: CLANGARM64
-            compiler: mingw-w64-clang-aarch64-clang
           - runner: macos-15-intel
             platform: macos
             target: darwin

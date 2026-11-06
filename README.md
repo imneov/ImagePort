@@ -107,9 +107,10 @@ The **Release** GitHub Actions workflow runs only when a version tag such as
 `v0.1.0` is pushed. Ordinary branch pushes and pull requests run CI without
 packaging or publishing a release. Tags such as `v0.2.0-rc.1` create prereleases.
 
-The workflow tests and packages Linux, Windows and macOS for both x64 (`amd64`)
-and ARM64 (`arm64`) on native runners. After all six packages succeed, it creates
-a GitHub Release with generated release notes, the six packages and `SHA256SUMS`.
+The workflow tests and packages Linux and macOS for x64 (`amd64`) and ARM64
+(`arm64`), plus Windows for x64, on GitHub-hosted native runners. After all five
+packages succeed, it creates a GitHub Release with generated release notes,
+the five packages and `SHA256SUMS`.
 Failed packaging prevents publication; a failed upload can be retried using the
 existing draft release. Published releases are not overwritten.
 
@@ -118,7 +119,7 @@ Download packages from the repository's **Releases** page:
 | System | Architectures | Package |
 | --- | --- | --- |
 | Linux | `amd64`, `arm64` | `ImagePort-vVERSION-linux-ARCH.tar.xz` |
-| Windows | `amd64`, `arm64` | `ImagePort-vVERSION-windows-ARCH.zip` |
+| Windows | `amd64` | `ImagePort-vVERSION-windows-ARCH.zip` |
 | macOS | `amd64` (Intel), `arm64` (Apple Silicon) | `ImagePort-vVERSION-macos-ARCH.zip` |
 
 Extract the macOS ZIP and move `ImagePort.app` to Applications. The archive
